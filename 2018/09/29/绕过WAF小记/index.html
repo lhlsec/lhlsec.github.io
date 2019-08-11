@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="utf-8">
+  
+  <title>绕过WAF小记 | Haoliang.Lu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="WAF(Web应用防火墙)是通过执行一系列针对HTTP/HTTPS 的安全策略来专门为Web应用提供保护的产品。WAF可以发现和拦截各类Web层面的攻击，记录攻击日志，实时预警提醒，在Web应用本身存在缺陷的情况下保障其安全。 攻击者可利用哪些方面来绕过WAF？1、    Web容器的特性2、    Web应用层的问题3、    WAF自身的问题4、    数据库的一些特性 Web容器的特性 –">
+<meta name="keywords" content="渗透测试">
+<meta property="og:type" content="article">
+<meta property="og:title" content="绕过WAF小记">
+<meta property="og:url" content="http://yoursite.com/2018/09/29/绕过WAF小记/index.html">
+<meta property="og:site_name" content="Haoliang.Lu">
+<meta property="og:description" content="WAF(Web应用防火墙)是通过执行一系列针对HTTP/HTTPS 的安全策略来专门为Web应用提供保护的产品。WAF可以发现和拦截各类Web层面的攻击，记录攻击日志，实时预警提醒，在Web应用本身存在缺陷的情况下保障其安全。 攻击者可利用哪些方面来绕过WAF？1、    Web容器的特性2、    Web应用层的问题3、    WAF自身的问题4、    数据库的一些特性 Web容器的特性 –">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382067656764.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382068432432.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382070341895.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382071417789.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382071633751.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382072325673.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382086062062.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382087099556.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382087882370.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382108805104.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382115160816.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382117793836.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382118771124.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382118973746.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382119163966.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382122870565.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382123241673.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382124979425.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382125636176.jpg">
+<meta property="og:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382154611253.jpg">
+<meta property="og:updated_time" content="2019-08-11T07:41:37.958Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="绕过WAF小记">
+<meta name="twitter:description" content="WAF(Web应用防火墙)是通过执行一系列针对HTTP/HTTPS 的安全策略来专门为Web应用提供保护的产品。WAF可以发现和拦截各类Web层面的攻击，记录攻击日志，实时预警提醒，在Web应用本身存在缺陷的情况下保障其安全。 攻击者可利用哪些方面来绕过WAF？1、    Web容器的特性2、    Web应用层的问题3、    WAF自身的问题4、    数据库的一些特性 Web容器的特性 –">
+<meta name="twitter:image" content="http://yoursite.com/2018/09/29/绕过WAF小记/15382067656764.jpg">
+  
+  
+    <link rel="icon" href="/favicon.ico">
+  
+  <link rel="stylesheet" href="/css/typing.css">
+  <link rel="stylesheet" href="/css/donate.css">
+  
+  
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  
+</head>
+
+  
+    
+      <body>
+    
+  
+      <div id="container" class="container">
+        <article id="post-绕过WAF小记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <header id="header" class="header">
+  <nav class="mobile-nav">
+    <h1 class="nickname">Haoliang.Lu</h1>
+    <ul class="mobile-nav-menu">
+      <label for="mobile-menu-toggle"><a>&#9776; Menu</a></label>
+      <input type="checkbox" id="mobile-menu-toggle"/>
+      <ul class="mobile-nav-link">
+        
+        <a href="/">Home</a>
+        
+        <a href="/archives">Archives</a>
+        
+        <a href="/about">About</a>
+        
+      </ul>
+    </ul>
+  </nav>
+	
+		<nav id="main-nav" class="main-nav nav-left">
+	
+	
+	  <a class="main-nav-link" href="/">Home</a>
+	
+	  <a class="main-nav-link" href="/archives">Archives</a>
+	
+	  <a class="main-nav-link" href="/about">About</a>
+	
+  </nav>
+</header>
+
+  <hr/>
+  <div class="article-inner">
+    
+
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      绕过WAF小记
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry typo" itemprop="articleBody">
+      
+        <p>WAF(Web应用防火墙)是通过执行一系列针对HTTP/HTTPS 的安全策略来专门为Web应用提供保护的产品。WAF可以发现和拦截各类Web层面的攻击，记录攻击日志，实时预警提醒，在Web应用本身存在缺陷的情况下保障其安全。</p>
+<h2 id="攻击者可利用哪些方面来绕过WAF？"><a href="#攻击者可利用哪些方面来绕过WAF？" class="headerlink" title="攻击者可利用哪些方面来绕过WAF？"></a>攻击者可利用哪些方面来绕过WAF？</h2><p>1、    Web容器的特性<br>2、    Web应用层的问题<br>3、    WAF自身的问题<br>4、    数据库的一些特性</p>
+<h3 id="Web容器的特性-–-1"><a href="#Web容器的特性-–-1" class="headerlink" title="Web容器的特性 – 1"></a>Web容器的特性 – 1</h3><p>IIS+ASP的神奇%</p>
+<p>在IIS+ASP的环境中，对于URL请求的参数值中的%，如果和后面的字符构成的字符串在URL编码表之外，ASP脚本处理时会将其忽略。</p>
+<p><img src="15382067656764.jpg" alt></p>
+<h3 id="Web容器的特性-–-2"><a href="#Web容器的特性-–-2" class="headerlink" title="Web容器的特性 – 2"></a>Web容器的特性 – 2</h3><p>IIS的Unicode编码字符</p>
+<p><img src="15382068432432.jpg" alt></p>
+<p>IIS支持Unicode编码字符的解析，但是某些WAF却不一定具备这种能力</p>
+<p>此方法还存在另外一种情况，多个不同的widechar可能会被转换为同一个字符。例如：<br>(<a href="http://blog.sina.com.cn/s/blog_85e506df0102vo9s.html" target="_blank" rel="noopener">http://blog.sina.com.cn/s/blog_85e506df0102vo9s.html</a> WideChar和MultiByte字符转换问题)<br>s%u0065lect-&gt;select<br>s%u00f0lect-&gt;select<br>这种情况需要根据不同的waf进行相应的测试，并不是百发百中。但是对于绕过来说，往往只要一个字符成功绕过即可达到目的。</p>
+<h3 id="Web容器的特性-–-3"><a href="#Web容器的特性-–-3" class="headerlink" title="Web容器的特性 – 3"></a>Web容器的特性 – 3</h3><p>HPP(HTTP Parameter Pollution): HTTP参数污染</p>
+<p><img src="15382070341895.jpg" alt></p>
+<p>在HTTP协议中是允许同样名称的参数出现多次的。例如：<a href="http://www.test.com/1.asp?id=123&amp;id=456" target="_blank" rel="noopener">http://www.test.com/1.asp?id=123&amp;id=456</a></p>
+<p>根据WAF的不同，一般会同时分开检查id=123和id=456，也有的仅可能取其中一个进行检测。但是对于IIS+ASP/ASP.NET来说，它最终获取到的ID参数的值是123,空格456(asp)或123,456(asp.net)</p>
+<p>所以对于这类过滤规则，攻击者可以通过：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">id=union+<span class="keyword">select</span>+<span class="keyword">password</span><span class="comment">/*&amp;id=*/</span><span class="keyword">from</span>+<span class="keyword">admin</span></span><br></pre></td></tr></table></figure>
+
+<p>来逃避对select * from的检测。因为HPP特性，id的参数值最终会变为：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">union <span class="keyword">select</span> <span class="keyword">password</span><span class="comment">/*,*/</span><span class="keyword">from</span> <span class="keyword">admin</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="15382071417789.jpg" alt></p>
+<p>下表是统计出的不同服务器对HPP的处理方式</p>
+<p><img src="15382071633751.jpg" alt></p>
+<h3 id="Web容器的特性-–-4"><a href="#Web容器的特性-–-4" class="headerlink" title="Web容器的特性 – 4"></a>Web容器的特性 – 4</h3><p>畸形HTTP请求</p>
+<p><img src="15382072325673.jpg" alt></p>
+<hr>
+<h3 id="Web应用层的问题-1"><a href="#Web应用层的问题-1" class="headerlink" title="Web应用层的问题 -1"></a>Web应用层的问题 -1</h3><p>多重编码问题</p>
+<p><img src="15382086062062.jpg" alt></p>
+<p>如果Web应用程序能够接收多重编码的数据，而WAF只能解码一层(或少于WEB应用程序能接收的层数)时，WAF会因为解码不完全导致防御机制被绕过。</p>
+<h3 id="Web应用层的问题-2"><a href="#Web应用层的问题-2" class="headerlink" title="Web应用层的问题 -2"></a>Web应用层的问题 -2</h3><p>多数据来源的问题</p>
+<p>如Asp和Asp.NET中的Request对象对于请求数据包的解析过于宽松，没有依照RFC的标准来，开发人员在编写代码时如果使用如下方式接收用户传入的参数</p>
+<p><img src="15382087099556.jpg" alt></p>
+<p>WEB程序可从以下3种途径获取到参数ID的参数值：<br>1.从GET请求中获取ID的参数值；<br>2.如果GET请求中没有ID参数，尝试从POST的ID参数中获取参数值；<br>3.如果GET和POST中都获取不到ID的参数值，那么从Cookies中的ID参数获取参数值。</p>
+<p>这样对于某些WAF来说，如果仅检查了GET或POST的，那么来自Cookie的注入攻击就无能为力了，更何况来自于这三种方式组合而成的参数污染的绕过方法呢？</p>
+<p><img src="15382087882370.jpg" alt></p>
+<hr>
+<h3 id="WAF自身的问题"><a href="#WAF自身的问题" class="headerlink" title="WAF自身的问题"></a>WAF自身的问题</h3><p>白名单机制<br>数据获取方式存在缺陷<br>数据处理不恰当<br>数据清洗不恰当<br>规则通用性问题<br>为性能和业务妥协</p>
+<h3 id="WAF自身的问题-–-1"><a href="#WAF自身的问题-–-1" class="headerlink" title="WAF自身的问题 – 1"></a>WAF自身的问题 – 1</h3><p>白名单机制</p>
+<p>WAF存在某些机制，不处理和拦截白名单中的请求数据：<br>1、指定IP或IP段的数据。<br>2、来自于搜索引擎爬虫的访问数据。<br>3、其他特征的数据。</p>
+<p>如以前某些WAF为了不影响站点的SEO优化，将User-Agent为某些搜索引擎（如谷歌）的请求当作白名单处理，不检测和拦截。伪造HTTP请求的User-Agent非常容易，只需要将HTTP请求包中的User-Agent修改为谷歌搜索引擎的User-Agent即可畅通无阻。</p>
+<h3 id="WAF自身的问题-–-2"><a href="#WAF自身的问题-–-2" class="headerlink" title="WAF自身的问题 – 2"></a>WAF自身的问题 – 2</h3><p>数据获取方式存在缺陷</p>
+<p>1、某些WAF无法全面支持GET、POST、Cookie等各类请求包的检测，当GET请求的攻击数据包无法绕过时，转换成POST可能就绕过去了。或者，POST以Content-Type: application/x-www-form-urlencoded无法绕过时，转换成上传包格式的Content-Type: multipart/form-data就能够绕过去。</p>
+<p><img src="15382108805104.jpg" alt></p>
+<p>2、某些WAF从数据包中提取检测特征的方式存在缺陷，如正则表达式不完善，某些攻击数据因为某些干扰字符的存在而无法被提取，常见的如%0a、%0b、%0c、%0d、%09、%0a等。在以前，针对某些WAF，直接使用以上字符就可以直接绕过。当然，现在不太可能了。</p>
+<h3 id="WAF自身的问题-–-3"><a href="#WAF自身的问题-–-3" class="headerlink" title="WAF自身的问题 – 3"></a>WAF自身的问题 – 3</h3><p>数据处理不恰当</p>
+<h4 id="1、-00截断"><a href="#1、-00截断" class="headerlink" title="1、%00截断"></a>1、%00截断</h4><p>将%00进行URL解码，即是C语言中的NULL字符</p>
+<p>如果WAF对获取到的数据存储和处理不当，那么%00解码后会将后面的数据截断，造成后面的数据没有经过检测。</p>
+<p><img src="15382115160816.jpg" alt></p>
+<p>WAF在获取到参数id的值并解码后，参数值将被截断成1/*，后面的攻击语句将没有被WAF拿去进行检测。</p>
+<h4 id="2、-amp-字符处理"><a href="#2、-amp-字符处理" class="headerlink" title="2、&amp;字符处理"></a>2、&amp;字符处理</h4><p><img src="15382117793836.jpg" alt></p>
+<p>某些WAF在对HTTP请求数据包中的参数进行检测时，使用&amp;字符对多个参数进行分割，然后分别进行检测，如：</p>
+<p><img src="15382118771124.jpg" alt></p>
+<p>这些WAF会使用&amp;符号分割par1、par2和par3，然后对其参数值进行检测。但是，如果遇到这种构造：</p>
+<p><img src="15382118973746.jpg" alt></p>
+<p>WAF会将以上参数分割成如下3部分：</p>
+<p><img src="15382119163966.jpg" alt></p>
+<p>如果将这3个参数分别进行检测，某些WAF是匹配不到攻击特征的。这里的%26是&amp;字符</p>
+<p>/<em>%26</em>/-&gt;/<em>&amp;</em>/ 其实只是一个SQL的注释而已</p>
+<h3 id="WAF自身的问题-–-4"><a href="#WAF自身的问题-–-4" class="headerlink" title="WAF自身的问题 – 4"></a>WAF自身的问题 – 4</h3><p>数据清洗不恰当</p>
+<p>当攻击者提交的参数值中存在大量干扰数据时，如大量空格、TAB、换行、%0c、注释等，WAF需要对其进行清洗，筛选出真实的攻击数据进行检测，以提高检查性能，节省资源。</p>
+<p> 如果WAF对数据的清洗不恰当，会导致真实的攻击数据被清洗，剩余的数据无法被检测出攻击行为。</p>
+<h3 id="WAF自身的问题-–-5"><a href="#WAF自身的问题-–-5" class="headerlink" title="WAF自身的问题 – 5"></a>WAF自身的问题 – 5</h3><p>规则通用性问题</p>
+<p>通用型的WAF，一般无法获知后端使用的是哪些WEB容器、什么数据库、以及使用的什么脚本语言。</p>
+<p>每一种WEB容器、数据库以及编程语言，它们都有自己的特性，想使用通用的WAF规则去匹配和拦截，是非常难的。</p>
+<p>通用型WAF在考虑到它们一些共性的同时，也必须兼顾它们的特性，否则就很容易被一些特性给Bypass！</p>
+<h3 id="WAF自身的问题-–-6"><a href="#WAF自身的问题-–-6" class="headerlink" title="WAF自身的问题 – 6"></a>WAF自身的问题 – 6</h3><p>为性能和业务妥协</p>
+<p>要全面兼容各类Web Server及各类数据库的WAF是非常难的，为了普适性，需要放宽一些检查条件，暴力的过滤方式会影响业务。</p>
+<p>对于通用性较强的软WAF来说，不得不考虑到各种机器和系系统的性能，故对于一些超大数据包、超长数据可能会跳过不检测。</p>
+<h2 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h2><h3 id="数据提取方式存在缺陷，导致WAF被绕过的实例"><a href="#数据提取方式存在缺陷，导致WAF被绕过的实例" class="headerlink" title="数据提取方式存在缺陷，导致WAF被绕过的实例"></a>数据提取方式存在缺陷，导致WAF被绕过的实例</h3><p>某些WAF从数据包中提取检测特征的方式存在缺陷，如正则表达式不完善，某些攻击数据因为某些干扰字符的存在而无法被提取。</p>
+<p><img src="15382122870565.jpg" alt></p>
+<p>某WAF在后端会将删除线部分当作注释清洗掉：</p>
+<p><img src="15382123241673.jpg" alt></p>
+<h3 id="数据清洗方式不正确，导致WAF被绕过"><a href="#数据清洗方式不正确，导致WAF被绕过" class="headerlink" title="数据清洗方式不正确，导致WAF被绕过"></a>数据清洗方式不正确，导致WAF被绕过</h3><p>当攻击者提交的参数值中存在大量干扰数据时，如大量空格、TAB、换行、%0c、注释等，WAF需要对其进行清洗（为提升性能和降低规则复杂性），筛选出真实的攻击数据进行检测，但是，如果清洗方式不正确，会导致真正的攻击部分被清洗，然后拿去检测的是不含有攻击向量的数据，从而被Bypass!</p>
+<p><img src="15382124979425.jpg" alt></p>
+<p><img src="15382125636176.jpg" alt></p>
+<h3 id="规则通用性问题，导致WAF被绕过"><a href="#规则通用性问题，导致WAF被绕过" class="headerlink" title="规则通用性问题，导致WAF被绕过"></a>规则通用性问题，导致WAF被绕过</h3><p>比如对SQL注入数据进行清洗时，WAF一般不能知道后端数据库是MySQL还是SQL Server，那么对于MySQL的<code>/*!50001Select*/</code>来说，这是一个Select的命令，而对于SQL Server来说，这只不过是一个注释而已，注释的内容为!50001Select。</p>
+<p>如数据库为SQL Server，某些WAF在处理如下语句时：</p>
+<p><img src="15382154611253.jpg" alt></p>
+<p>参考:<br><a href="https://twosecurity.io/" target="_blank" rel="noopener">https://twosecurity.io/</a></p>
+
+      
+      
+    </div>
+    <footer class="article-footer">
+      <ul class="article-meta">
+        <li>
+          <span class="label">Published Date:</span>
+          <a href="/2018/09/29/绕过WAF小记/" class="article-date">
+  <time class="dt-published" datetime="2018-09-29T15:23:11.000Z" itemprop="datePublished">2018-09-29</time>
+</a>
+
+        </li>
+        
+        
+          <li>
+            <span class="label">Tag:</span>
+            
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/渗透测试/">渗透测试</a></li></ul>
+
+
+          </li>
+        
+        <hr/>
+      </ul>
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav" class="article-nav">
+  
+    <a href="/2018/10/29/论文阅读：Peek-a-Boo：I see your smart home activities, even encrypted/" id="article-nav-newer" class="article-nav-link-wrap newer">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Peek-a-Boo：I see your smart home activities, even encrypted(论文阅读)
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2018/05/10/论文阅读：Automated Dynamic Firmware Analysis at Scale：A Case Study on Embedded Web Interfaces/" id="article-nav-older" class="article-nav-link-wrap older">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Automated Dynamic Firmware Analysis at Scale：A Case Study on Embedded Web Interfaces(论文阅读)</div>
+    </a>
+  
+</nav>
+
+
+  
+</article>
+
+
+
+
+
+
+
+
+
+
+      </div>
+      
+    <footer id="footer" class="post-footer footer">
+      
+      <hr/>
+      <div id="footerContent" class="footer-content">
+        <p>The quieter you become,the more you are able to hear.</p>
+
+
+      </div>
+    </footer>
+
+      
+
+
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js"></script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+
+
+<script src="/js/typing.js"></script>
+<!--[if lt IE 9]><script src="https://cdn.jsdelivr.net/npm/html5shiv@3/dist/html5shiv.min.js"></script><![endif]-->
+
+
+
+
+
+
+
+    </div>
+  </body>
+</html>
