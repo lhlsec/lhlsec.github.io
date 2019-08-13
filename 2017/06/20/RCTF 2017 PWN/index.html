@@ -5,13 +5,13 @@
   
   <title>RCTF 2017 PWN | Haoliang.Lu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="Recho分析简单的栈溢出，但是循环判断的，想要触发溢出，需要退出循环  在shell中可以使用ctrl+d表示EOF,可以退出循环，pwntools可以用io.shutdown(‘send’)  利用题目中给了hint rop思路如下 1open(flag)-&amp;gt;read(flag-&amp;gt;bss)-&amp;gt;write(bss-&amp;gt;STDOUT)  程序中留了相关的gadget 可以用于">
+  <meta name="description" content="Recho分析简单的栈溢出，但是循环判断的，想要触发溢出，需要退出循环   利用题目中给了hint rop思路如下 1open(flag)-&amp;gt;read(flag-&amp;gt;bss)-&amp;gt;write(bss-&amp;gt;STDOUT)  程序中留了相关的gadget 可以用于修改GOT表中的函数入口为syscall以及”flag”字符串用于open()-&amp;gt;read()-&amp;gt;write(">
 <meta name="keywords" content="CTF">
 <meta property="og:type" content="article">
 <meta property="og:title" content="RCTF 2017 PWN">
 <meta property="og:url" content="http://yoursite.com/2017/06/20/RCTF 2017 PWN/index.html">
 <meta property="og:site_name" content="Haoliang.Lu">
-<meta property="og:description" content="Recho分析简单的栈溢出，但是循环判断的，想要触发溢出，需要退出循环  在shell中可以使用ctrl+d表示EOF,可以退出循环，pwntools可以用io.shutdown(‘send’)  利用题目中给了hint rop思路如下 1open(flag)-&amp;gt;read(flag-&amp;gt;bss)-&amp;gt;write(bss-&amp;gt;STDOUT)  程序中留了相关的gadget 可以用于">
+<meta property="og:description" content="Recho分析简单的栈溢出，但是循环判断的，想要触发溢出，需要退出循环   利用题目中给了hint rop思路如下 1open(flag)-&amp;gt;read(flag-&amp;gt;bss)-&amp;gt;write(bss-&amp;gt;STDOUT)  程序中留了相关的gadget 可以用于修改GOT表中的函数入口为syscall以及”flag”字符串用于open()-&amp;gt;read()-&amp;gt;write(">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://yoursite.com/2017/06/20/RCTF%202017%20PWN/15363939790672.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/06/20/RCTF%202017%20PWN/15363948701060.jpg">
@@ -31,10 +31,10 @@
 <meta property="og:image" content="http://yoursite.com/2017/06/20/RCTF%202017%20PWN/15415587834544.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/06/20/RCTF%202017%20PWN/15415591325261.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/06/20/RCTF%202017%20PWN/15415592516389.jpg">
-<meta property="og:updated_time" content="2019-08-11T05:40:46.578Z">
+<meta property="og:updated_time" content="2019-08-13T03:20:52.076Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="RCTF 2017 PWN">
-<meta name="twitter:description" content="Recho分析简单的栈溢出，但是循环判断的，想要触发溢出，需要退出循环  在shell中可以使用ctrl+d表示EOF,可以退出循环，pwntools可以用io.shutdown(‘send’)  利用题目中给了hint rop思路如下 1open(flag)-&amp;gt;read(flag-&amp;gt;bss)-&amp;gt;write(bss-&amp;gt;STDOUT)  程序中留了相关的gadget 可以用于">
+<meta name="twitter:description" content="Recho分析简单的栈溢出，但是循环判断的，想要触发溢出，需要退出循环   利用题目中给了hint rop思路如下 1open(flag)-&amp;gt;read(flag-&amp;gt;bss)-&amp;gt;write(bss-&amp;gt;STDOUT)  程序中留了相关的gadget 可以用于修改GOT表中的函数入口为syscall以及”flag”字符串用于open()-&amp;gt;read()-&amp;gt;write(">
 <meta name="twitter:image" content="http://yoursite.com/2017/06/20/RCTF%202017%20PWN/15363939790672.jpg">
   
   
@@ -104,7 +104,6 @@
       
         <h2 id="Recho"><a href="#Recho" class="headerlink" title="Recho"></a>Recho</h2><h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p>简单的栈溢出，但是循环判断的，想要触发溢出，需要退出循环</p>
 <p><img src="15363939790672.jpg" alt></p>
-<p>在shell中可以使用ctrl+d表示EOF,可以退出循环，pwntools可以用io.shutdown(‘send’)</p>
 <p><img src="15363948701060.jpg" alt></p>
 <h3 id="利用"><a href="#利用" class="headerlink" title="利用"></a>利用</h3><p>题目中给了hint<br><img src="15364008676445.jpg" alt></p>
 <p>rop思路如下</p>
