@@ -5,27 +5,26 @@
   
   <title>0CTF 2017 PWN | Haoliang.Lu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="Fastbin Attackfastbin attack 是一类漏洞的利用方法,如果细分的话，可以做如下的分类： Fastbin Double FreeHouse of SpiritAlloc to StackArbitrary Alloc 其中，前两种主要漏洞侧重于利用 free 函数释放真的 chunk 或伪造的 chunk，然后再次申请 chunk 进行攻击，后两种侧重于故意修改 fd 指针">
+  <meta name="description" content="程序分析程序是一个堆分配器，主要有以下四种功能 123456puts(&amp;quot;1. Allocate&amp;quot;);puts(&amp;quot;2. Fill&amp;quot;);puts(&amp;quot;3. Free&amp;quot;);puts(&amp;quot;4. Dump&amp;quot;);puts(&amp;quot;5. Exit&amp;quot;);return printf(&amp;quot;Command: &amp;quot;)">
 <meta name="keywords" content="CTF">
 <meta property="og:type" content="article">
 <meta property="og:title" content="0CTF 2017 PWN">
 <meta property="og:url" content="http://yoursite.com/2017/03/25/0CTF 2017 PWN/index.html">
 <meta property="og:site_name" content="Haoliang.Lu">
-<meta property="og:description" content="Fastbin Attackfastbin attack 是一类漏洞的利用方法,如果细分的话，可以做如下的分类： Fastbin Double FreeHouse of SpiritAlloc to StackArbitrary Alloc 其中，前两种主要漏洞侧重于利用 free 函数释放真的 chunk 或伪造的 chunk，然后再次申请 chunk 进行攻击，后两种侧重于故意修改 fd 指针">
+<meta property="og:description" content="程序分析程序是一个堆分配器，主要有以下四种功能 123456puts(&amp;quot;1. Allocate&amp;quot;);puts(&amp;quot;2. Fill&amp;quot;);puts(&amp;quot;3. Free&amp;quot;);puts(&amp;quot;4. Dump&amp;quot;);puts(&amp;quot;5. Exit&amp;quot;);return printf(&amp;quot;Command: &amp;quot;)">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256116193375.jpg">
-<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256591260016.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256592845524.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256595796529.jpg">
+<meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256591260016.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256736598087.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256737798349.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256743071737.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256743535105.jpg">
-<meta property="og:updated_time" content="2019-08-11T06:38:53.979Z">
+<meta property="og:updated_time" content="2019-09-06T11:28:36.845Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="0CTF 2017 PWN">
-<meta name="twitter:description" content="Fastbin Attackfastbin attack 是一类漏洞的利用方法,如果细分的话，可以做如下的分类： Fastbin Double FreeHouse of SpiritAlloc to StackArbitrary Alloc 其中，前两种主要漏洞侧重于利用 free 函数释放真的 chunk 或伪造的 chunk，然后再次申请 chunk 进行攻击，后两种侧重于故意修改 fd 指针">
-<meta name="twitter:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256116193375.jpg">
+<meta name="twitter:description" content="程序分析程序是一个堆分配器，主要有以下四种功能 123456puts(&amp;quot;1. Allocate&amp;quot;);puts(&amp;quot;2. Fill&amp;quot;);puts(&amp;quot;3. Free&amp;quot;);puts(&amp;quot;4. Dump&amp;quot;);puts(&amp;quot;5. Exit&amp;quot;);return printf(&amp;quot;Command: &amp;quot;)">
+<meta name="twitter:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256592845524.jpg">
   
   
     <link rel="icon" href="/favicon.ico">
@@ -92,31 +91,7 @@
     
     <div class="e-content article-entry typo" itemprop="articleBody">
       
-        <h2 id="Fastbin-Attack"><a href="#Fastbin-Attack" class="headerlink" title="Fastbin Attack"></a>Fastbin Attack</h2><p>fastbin attack 是一类漏洞的利用方法,如果细分的话，可以做如下的分类：</p>
-<p>Fastbin Double Free<br>House of Spirit<br>Alloc to Stack<br>Arbitrary Alloc</p>
-<p>其中，前两种主要漏洞侧重于利用 free 函数释放真的 chunk 或伪造的 chunk，然后再次申请 chunk 进行攻击，后两种侧重于故意修改 fd 指针，直接利用 malloc 申请指定位置 chunk 进行攻击。</p>
-<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>fastbin attack 存在的原因在于 fastbin 是使用单链表来维护释放的堆块的，并且由 fastbin 管理的 chunk 即使被释放，其 next_chunk 的 prev_inuse 位也不会被清空。</p>
-<h3 id="Fastbin-Double-Free"><a href="#Fastbin-Double-Free" class="headerlink" title="Fastbin Double Free"></a>Fastbin Double Free</h3><p>Fastbin Double Free 是指 fastbin 的 chunk 可以被多次释放，因此可以在 fastbin 链表中存在多次。这样导致的后果是多次分配可以从 fastbin 链表中取出同一个堆块，相当于多个指针指向同一个堆块</p>
-<p>Fastbin Double Free 能够成功利用主要有两部分的原因</p>
-<ol>
-<li>fastbin 的堆块被释放后 next_chunk 的 pre_inuse 位不会被清空</li>
-<li>fastbin 在执行 free 的时候仅验证了 main_arena 直接指向的块，即链表指针头部的块。对于链表后面的块，并没有进行验证。</li>
-</ol>
-<p>下面的示例程序说明了这一点，当我们试图执行以下代码时,报错。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">int main(void)</span><br><span class="line">&#123;</span><br><span class="line">    void *chunk1,*chunk2,*chunk3;</span><br><span class="line">    chunk1=malloc(0x10);</span><br><span class="line">    chunk2=malloc(0x10);</span><br><span class="line"></span><br><span class="line">    free(chunk1);</span><br><span class="line">    free(chunk1);</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>执行如下代码时,即如果我们在 chunk1 释放后，再释放 chunk2 ，这样 main_arena 就指向 chunk2 而不是 chunk1 了，此时我们再去释放 chunk1 就不再会被检测到。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">int main(void)</span><br><span class="line">&#123;</span><br><span class="line">    void *chunk1,*chunk2,*chunk3;</span><br><span class="line">    chunk1=malloc(0x10);</span><br><span class="line">    chunk2=malloc(0x10);</span><br><span class="line"></span><br><span class="line">    free(chunk1);</span><br><span class="line">    free(chunk2);</span><br><span class="line">    free(chunk1);</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>注意因为 chunk1 被再次释放因此其 fd 值不再为 0 而是指向 chunk2，这时如果我们可以控制 chunk1 的内容，便可以写入其 fd 指针从而实现在我们想要的任意地址分配 fastbin 块。 下面这个示例演示了这一点，首先跟前面一样构 main_arena=&gt;chunk1=&gt;chunk2=&gt;chunk1的链表。之后第一次调用 malloc 返回 chunk1 之后修改 chunk1 的 fd 指针指向 bss 段上的 bss_chunk，再连续malloc两次之后，再次malloc即可返回bss段的地址，从而造成任意地址写。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">typedef struct _chunk</span><br><span class="line">&#123;</span><br><span class="line">    long long pre_size;</span><br><span class="line">    long long size;</span><br><span class="line">    long long fd;</span><br><span class="line">    long long bk;  </span><br><span class="line">&#125; CHUNK,*PCHUNK;</span><br><span class="line"></span><br><span class="line">CHUNK bss_chunk;</span><br><span class="line"></span><br><span class="line">int main(void)</span><br><span class="line">&#123;</span><br><span class="line">    void *chunk1,*chunk2,*chunk3;</span><br><span class="line">    void *chunk_a,*chunk_b;</span><br><span class="line"></span><br><span class="line">    bss_chunk.size=0x21;</span><br><span class="line">    chunk1=malloc(0x10);</span><br><span class="line">    chunk2=malloc(0x10);</span><br><span class="line"></span><br><span class="line">    free(chunk1);</span><br><span class="line">    free(chunk2);</span><br><span class="line">    free(chunk1);</span><br><span class="line"></span><br><span class="line">    chunk_a=malloc(0x10);</span><br><span class="line">    *(long long *)chunk_a=&amp;bss_chunk;</span><br><span class="line">    malloc(0x10);</span><br><span class="line">    malloc(0x10);</span><br><span class="line">    chunk_b=malloc(0x10);</span><br><span class="line">    printf(&quot;%p&quot;,chunk_b);</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在我的系统上 chunk_b 输出的值会是 0x601090，这个值位于bss段中正是我们之前设置的CHUNK bss_chunk</p>
-<p><img src="15256116193375.jpg" alt></p>
-<p>值得注意的是，我们在 main 函数的第一步就进行了bss_chunk.size=0x21;的操作，这是因为_int_malloc会对欲分配位置的 size 域进行验证，如果其 size 与当前 fastbin 链表应有 size 不符就会抛出异常。</p>
-<hr>
-<h2 id="0ctf2017-babyheap"><a href="#0ctf2017-babyheap" class="headerlink" title="0ctf2017 babyheap"></a>0ctf2017 babyheap</h2><p><img src="15256591260016.jpg" alt></p>
-<h3 id="程序分析"><a href="#程序分析" class="headerlink" title="程序分析"></a>程序分析</h3><p>程序是一个堆分配器，主要有以下四种功能</p>
+        <h3 id="程序分析"><a href="#程序分析" class="headerlink" title="程序分析"></a>程序分析</h3><p>程序是一个堆分配器，主要有以下四种功能</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">puts(&quot;1. Allocate&quot;);</span><br><span class="line">puts(&quot;2. Fill&quot;);</span><br><span class="line">puts(&quot;3. Free&quot;);</span><br><span class="line">puts(&quot;4. Dump&quot;);</span><br><span class="line">puts(&quot;5. Exit&quot;);</span><br><span class="line">return printf(&quot;Command: &quot;);</span><br></pre></td></tr></table></figure>
 
 <p>申请的 chunk 的最大为 4096。此外，我们可以看出每个管理chunk的部分主要有三个字段：是否在使用，堆块大小，堆块位置。<br><img src="15256592845524.jpg" alt></p>
@@ -128,6 +103,7 @@
 
 <p>在填充内容的功能中，使用读取内容的函数是直接读取指定长度的内容，并没有设置字符串结尾。而且这个指定长度是我们指定的，并不是之前 chunk 分配时指定的长度，所以此处存在堆溢出。</p>
 <p><img src="15256595796529.jpg" alt></p>
+<h2 id="缓解机制"><a href="#缓解机制" class="headerlink" title="缓解机制"></a>缓解机制</h2><p><img src="15256591260016.jpg" alt></p>
 <h3 id="利用思路"><a href="#利用思路" class="headerlink" title="利用思路"></a>利用思路</h3><p>主要的漏洞是任意长度堆溢出。由于该程序几乎所有保护都开启了，所以我们必须泄漏一些地址，才可以劫持控制流。基本利用思路如下：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">利用 unsorted bin 地址泄漏 libc 基地址。</span><br><span class="line">利用 fastbin attack 将chunk 分配到 malloc_hook 附近,通过malloc_hook函数劫持程序控制流</span><br></pre></td></tr></table></figure>
 
