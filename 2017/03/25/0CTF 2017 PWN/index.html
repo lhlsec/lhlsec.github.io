@@ -5,13 +5,13 @@
   
   <title>0CTF 2017 PWN | Haoliang.Lu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="程序分析程序是一个堆分配器，主要有以下四种功能 123456puts(&amp;quot;1. Allocate&amp;quot;);puts(&amp;quot;2. Fill&amp;quot;);puts(&amp;quot;3. Free&amp;quot;);puts(&amp;quot;4. Dump&amp;quot;);puts(&amp;quot;5. Exit&amp;quot;);return printf(&amp;quot;Command: &amp;quot;)">
+  <meta name="description" content="程序分析程序主要有以下四种功能 123456puts(&amp;quot;1. Allocate&amp;quot;);puts(&amp;quot;2. Fill&amp;quot;);puts(&amp;quot;3. Free&amp;quot;);puts(&amp;quot;4. Dump&amp;quot;);puts(&amp;quot;5. Exit&amp;quot;);return printf(&amp;quot;Command: &amp;quot;);  申请的 c">
 <meta name="keywords" content="CTF">
 <meta property="og:type" content="article">
 <meta property="og:title" content="0CTF 2017 PWN">
 <meta property="og:url" content="http://yoursite.com/2017/03/25/0CTF 2017 PWN/index.html">
 <meta property="og:site_name" content="Haoliang.Lu">
-<meta property="og:description" content="程序分析程序是一个堆分配器，主要有以下四种功能 123456puts(&amp;quot;1. Allocate&amp;quot;);puts(&amp;quot;2. Fill&amp;quot;);puts(&amp;quot;3. Free&amp;quot;);puts(&amp;quot;4. Dump&amp;quot;);puts(&amp;quot;5. Exit&amp;quot;);return printf(&amp;quot;Command: &amp;quot;)">
+<meta property="og:description" content="程序分析程序主要有以下四种功能 123456puts(&amp;quot;1. Allocate&amp;quot;);puts(&amp;quot;2. Fill&amp;quot;);puts(&amp;quot;3. Free&amp;quot;);puts(&amp;quot;4. Dump&amp;quot;);puts(&amp;quot;5. Exit&amp;quot;);return printf(&amp;quot;Command: &amp;quot;);  申请的 c">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256592845524.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256595796529.jpg">
@@ -20,10 +20,10 @@
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256737798349.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256743071737.jpg">
 <meta property="og:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256743535105.jpg">
-<meta property="og:updated_time" content="2019-09-06T11:28:36.845Z">
+<meta property="og:updated_time" content="2019-09-06T11:33:18.309Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="0CTF 2017 PWN">
-<meta name="twitter:description" content="程序分析程序是一个堆分配器，主要有以下四种功能 123456puts(&amp;quot;1. Allocate&amp;quot;);puts(&amp;quot;2. Fill&amp;quot;);puts(&amp;quot;3. Free&amp;quot;);puts(&amp;quot;4. Dump&amp;quot;);puts(&amp;quot;5. Exit&amp;quot;);return printf(&amp;quot;Command: &amp;quot;)">
+<meta name="twitter:description" content="程序分析程序主要有以下四种功能 123456puts(&amp;quot;1. Allocate&amp;quot;);puts(&amp;quot;2. Fill&amp;quot;);puts(&amp;quot;3. Free&amp;quot;);puts(&amp;quot;4. Dump&amp;quot;);puts(&amp;quot;5. Exit&amp;quot;);return printf(&amp;quot;Command: &amp;quot;);  申请的 c">
 <meta name="twitter:image" content="http://yoursite.com/2017/03/25/0CTF%202017%20PWN/15256592845524.jpg">
   
   
@@ -91,7 +91,7 @@
     
     <div class="e-content article-entry typo" itemprop="articleBody">
       
-        <h3 id="程序分析"><a href="#程序分析" class="headerlink" title="程序分析"></a>程序分析</h3><p>程序是一个堆分配器，主要有以下四种功能</p>
+        <h3 id="程序分析"><a href="#程序分析" class="headerlink" title="程序分析"></a>程序分析</h3><p>程序主要有以下四种功能</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">puts(&quot;1. Allocate&quot;);</span><br><span class="line">puts(&quot;2. Fill&quot;);</span><br><span class="line">puts(&quot;3. Free&quot;);</span><br><span class="line">puts(&quot;4. Dump&quot;);</span><br><span class="line">puts(&quot;5. Exit&quot;);</span><br><span class="line">return printf(&quot;Command: &quot;);</span><br></pre></td></tr></table></figure>
 
 <p>申请的 chunk 的最大为 4096。此外，我们可以看出每个管理chunk的部分主要有三个字段：是否在使用，堆块大小，堆块位置。<br><img src="15256592845524.jpg" alt></p>
@@ -107,6 +107,7 @@
 <h3 id="利用思路"><a href="#利用思路" class="headerlink" title="利用思路"></a>利用思路</h3><p>主要的漏洞是任意长度堆溢出。由于该程序几乎所有保护都开启了，所以我们必须泄漏一些地址，才可以劫持控制流。基本利用思路如下：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">利用 unsorted bin 地址泄漏 libc 基地址。</span><br><span class="line">利用 fastbin attack 将chunk 分配到 malloc_hook 附近,通过malloc_hook函数劫持程序控制流</span><br></pre></td></tr></table></figure>
 
+<p>即通过堆溢出和fastbin机制来进行information leak，然后通过fastbin attack将malloc_hook劫持为one_gadget来getshell</p>
 <h4 id="leak-libc"><a href="#leak-libc" class="headerlink" title="leak libc"></a>leak libc</h4><p>由于我们是希望使用 unsorted bin 来泄漏 libc 基地址，所以必须要有 chunk 可以被链接到 unsorted bin 中，所以该 chunk 不能使 fastbin chunk，也不能和 top chunk 相邻。因为前者会被添加到 fastbin 中，后者在不是fastbin 的情况下，会被合并到 top chunk 中。因此，我们这里构造一个 small bin chunk。在将该 chunk 释放到 unsorted bin 的同时，也需要让另外一个正在使用的 chunk 可以同时指向该 chunk 的位置。这样才可以进行泄漏。具体设计如下</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">allocate(0x10) #0</span><br><span class="line">allocate(0x10) #1</span><br><span class="line">allocate(0x10) #2</span><br><span class="line">allocate(0x10) #3</span><br><span class="line">allocate(0x80) #4</span><br><span class="line"></span><br><span class="line">free(2)</span><br><span class="line">free(1)</span><br></pre></td></tr></table></figure>
 
